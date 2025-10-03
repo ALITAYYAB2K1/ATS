@@ -136,7 +136,7 @@ export default function Home() {
               <Link to="/upload">
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="text-white w-full sm:w-auto text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   Analyze My Resume
                   <ArrowRight className="ml-2 h-5 w-5" />

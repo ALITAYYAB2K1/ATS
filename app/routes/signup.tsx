@@ -2,6 +2,7 @@ import { useState } from "react";
 import { account } from "~/lib/appwrite";
 import { useNavigate } from "react-router";
 import { ID } from "appwrite";
+import { useAuth } from "../components/auth-context";
 
 export function meta() {
   return [
@@ -12,6 +13,7 @@ export function meta() {
 
 export default function SignUp() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -55,18 +57,22 @@ export default function SignUp() {
       // Automatically log them in
       await account.createEmailPasswordSession(email, password);
 
-      // Send verification email
-      await account.createVerification(`${window.location.origin}/auth/verify`);
+      // Send verification email (fire & forget)
+      account
+        .createVerification(`${window.location.origin}/auth/verify`)
+        .catch(() => {});
 
       setMessage({
         type: "success",
-        text: "Account created! Please check your email to verify your account.",
+        text: "Account created! Redirecting... (verification email sent)",
       });
 
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
+      // Immediately refresh global auth context so navbar updates
+      await refreshUser();
+      navigate("/");
+      try {
+        (window as any).__authRefresh?.();
+      } catch {}
     } catch (error: any) {
       setMessage({
         type: "error",

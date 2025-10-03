@@ -12,6 +12,7 @@ import "./app.css";
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
 import { Toaster } from "./components/ui/sonner";
+import { AuthProvider } from "./components/auth-context";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -47,14 +48,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <>
-      <div className="flex min-h-screen flex-col">
-        <Navbar />
-        <main className="flex-1">
-          <Outlet />
-        </main>
-        <Footer />
-      </div>
-      <Toaster />
+      <AuthProvider>
+        <div className="flex min-h-screen flex-col">
+          <Navbar />
+          <main className="flex-1">
+            <Outlet />
+          </main>
+          <Footer />
+        </div>
+        <Toaster />
+      </AuthProvider>
     </>
   );
 }

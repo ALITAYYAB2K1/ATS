@@ -1,48 +1,32 @@
 import { Link, useNavigate, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { account } from "../lib/appwrite";
 import { cn } from "../lib/utils";
+import { useAuth } from "./auth-context";
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState<any | null>(null);
-  const [checked, setChecked] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const me = await account.get();
-        if (mounted) setUser(me);
-      } catch {
-        if (mounted) setUser(null);
-      } finally {
-        if (mounted) setChecked(true);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const { user, loading, refreshUser } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
       await account.deleteSession("current");
-    } catch (e) {
-      // ignore
-    } finally {
-      // Force a reload to clear any client state & go home
-      navigate("/");
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
-    }
+    } catch {}
+    await refreshUser();
+    navigate("/");
+    setLoggingOut(false);
+    try {
+      (window as any).__authRefresh?.();
+    } catch {}
   };
 
   const isAnon = user?.labels?.includes("anonymous");
-  const isAuthed = !!user && !isAnon; // hide auth buttons only when real user session
+  const isAuthed = !!user && !isAnon;
 
   const navLinks = [
     { to: "/", label: "Home", auth: false, isActive: (p: string) => p === "/" },
@@ -68,7 +52,7 @@ export default function Navbar() {
 
   const pathname = location.pathname;
   const baseLink =
-    "relative px-5 py-2.5 text-[15px] font-medium rounded-full transition-colors duration-200";
+    "relative px-5 py-2.5 text-[15px] font-medium rounded-full transition-colors duration-200 cursor-pointer";
   // Subtle, low-vibrancy active style (less flashy)
   const activeClasses =
     "bg-white/80 dark:bg-white/10 text-foreground shadow-sm ring-1 ring-black/10 dark:ring-white/15 backdrop-blur";
@@ -110,18 +94,18 @@ export default function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-3 min-w-[240px] justify-end">
-          {!checked && (
+          {loading && (
             <span className="text-xs text-muted-foreground animate-pulse">
               Loading...
             </span>
           )}
-          {checked && !isAuthed && (
+          {!loading && !isAuthed && (
             <>
               <Link to="/signin">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-10 px-5 text-[15px]"
+                  className="h-10 px-5 text-[15px] transition-all duration-200 will-change-transform hover:-translate-y-[3px] hover:translate-x-[2px] hover:shadow-[0_10px_22px_-6px_rgba(0,0,0,0.25)] active:translate-y-0 active:translate-x-0 active:shadow-sm cursor-pointer"
                 >
                   Sign in
                 </Button>
@@ -129,14 +113,14 @@ export default function Navbar() {
               <Link to="/signup">
                 <Button
                   size="sm"
-                  className="text-white h-10 px-5 text-[15px] font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-600 hover:to-purple-600/90 shadow-sm"
+                  className="text-white h-10 px-5 text-[15px] font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-600 hover:to-purple-600/90 shadow-md transition-all duration-200 will-change-transform hover:-translate-y-[3px] hover:translate-x-[2px] hover:shadow-[0_14px_26px_-8px_rgba(56,97,251,0.45)] active:translate-y-0 active:translate-x-0 active:shadow-sm cursor-pointer"
                 >
                   Sign up
                 </Button>
               </Link>
             </>
           )}
-          {checked && isAuthed && (
+          {!loading && isAuthed && (
             <>
               <span
                 className="hidden md:inline text-sm text-foreground/80 max-w-[160px] truncate"
@@ -148,9 +132,10 @@ export default function Navbar() {
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="h-10 px-5 text-[15px] hover:bg-red-500/10 hover:text-red-600"
+                disabled={loggingOut}
+                className="h-10 px-5 text-[15px] hover:bg-red-500/10 hover:text-red-600 disabled:opacity-50 transition-all duration-200 will-change-transform hover:-translate-y-[3px] hover:translate-x-[2px] hover:shadow-[0_10px_22px_-6px_rgba(0,0,0,0.25)] active:translate-y-0 active:translate-x-0 active:shadow-sm cursor-pointer"
               >
-                Logout
+                {loggingOut ? "..." : "Logout"}
               </Button>
             </>
           )}

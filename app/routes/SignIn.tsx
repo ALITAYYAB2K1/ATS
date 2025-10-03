@@ -1,7 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { account } from "~/lib/appwrite";
 import { useNavigate } from "react-router";
 import { Input } from "../components/ui/input";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "../components/ui/input-otp";
+import { useAuth } from "../components/auth-context";
 
 export function meta() {
   return [
@@ -12,7 +18,9 @@ export function meta() {
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const [authMode, setAuthMode] = useState<"magic" | "password">("magic");
+  const [authMode, setAuthMode] = useState<"magic" | "password" | "otp">(
+    "magic"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,6 +29,35 @@ export default function SignIn() {
     text: string;
   } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const { refreshUser } = useAuth();
+  // OTP state
+  const [otpUserId, setOtpUserId] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
+  const [otpPhase, setOtpPhase] = useState<"request" | "verify">("request");
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const resendTimerRef = useRef<number | null>(null);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (resendTimerRef.current) window.clearInterval(resendTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (resendSeconds <= 0 && resendTimerRef.current) {
+      window.clearInterval(resendTimerRef.current);
+      resendTimerRef.current = null;
+    }
+  }, [resendSeconds]);
+
+  const startResendCountdown = () => {
+    setResendSeconds(60);
+    if (resendTimerRef.current) window.clearInterval(resendTimerRef.current);
+    resendTimerRef.current = window.setInterval(() => {
+      setResendSeconds((s) => s - 1);
+    }, 1000) as unknown as number;
+  };
 
   // Magic URL (Email Verification) Sign In
   const handleMagicLinkSignIn = async (e: React.FormEvent) => {
@@ -70,12 +107,12 @@ export default function SignIn() {
         // Optionally log them out until verified
         // await account.deleteSession('current');
       } else {
-        setMessage({
-          type: "success",
-          text: "Signed in successfully!",
-        });
-        // Redirect to dashboard or home
-        setTimeout(() => navigate("/"), 1500);
+        setMessage({ type: "success", text: "Signed in successfully!" });
+        await refreshUser();
+        navigate("/");
+        try {
+          (window as any).__authRefresh?.();
+        } catch {}
       }
     } catch (error: any) {
       setMessage({
@@ -88,8 +125,84 @@ export default function SignIn() {
     }
   };
 
+  // OTP: Request code
+  const handleOtpRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+    setOtp("");
+    try {
+      // Appwrite Email OTP (if supported). It sends a 6-digit code to the email.
+      // API: account.createEmailToken(userId, email)
+      const anyAccount: any = account as any;
+      if (typeof anyAccount.createEmailToken !== "function") {
+        throw new Error(
+          "This Appwrite SDK doesn't support email OTP tokens. Update Appwrite or use magic link."
+        );
+      }
+      const token = await anyAccount.createEmailToken("unique()", email);
+      setOtpUserId(token.userId);
+      setOtpPhase("verify");
+      setMessage({
+        type: "success",
+        text: "We've sent a 6-digit code to your email. Enter it below to continue.",
+      });
+      startResendCountdown();
+    } catch (error: any) {
+      setMessage({
+        type: "error",
+        text: error.message || "Failed to send code. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // OTP: Verify code & create session
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpUserId) return;
+    setLoading(true);
+    setMessage(null);
+    try {
+      const anyAccount: any = account as any;
+      // API variant 1: createSession(userId, secret)
+      if (typeof anyAccount.createSession === "function") {
+        await anyAccount.createSession(otpUserId, otp);
+      } else if (typeof anyAccount.updateEmailSession === "function") {
+        // Fallback older style
+        await anyAccount.updateEmailSession(otpUserId, otp);
+      } else {
+        throw new Error(
+          "No compatible session creation method for email OTP found in this SDK."
+        );
+      }
+      setMessage({ type: "success", text: "Signed in successfully!" });
+      await refreshUser();
+      navigate("/");
+      try {
+        (window as any).__authRefresh?.();
+      } catch {}
+    } catch (error: any) {
+      setMessage({
+        type: "error",
+        text:
+          error.message ||
+          "Invalid or expired code. You can request a new one and try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit =
-    authMode === "magic" ? handleMagicLinkSignIn : handlePasswordSignIn;
+    authMode === "magic"
+      ? handleMagicLinkSignIn
+      : authMode === "password"
+        ? handlePasswordSignIn
+        : otpPhase === "request"
+          ? handleOtpRequest
+          : handleOtpVerify;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4 py-12">
@@ -113,6 +226,7 @@ export default function SignIn() {
               onClick={() => {
                 setAuthMode("magic");
                 setMessage(null);
+                setOtpPhase("request");
               }}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-all duration-200 ${
                 authMode === "magic"
@@ -127,6 +241,7 @@ export default function SignIn() {
               onClick={() => {
                 setAuthMode("password");
                 setMessage(null);
+                setOtpPhase("request");
               }}
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-all duration-200 ${
                 authMode === "password"
@@ -135,6 +250,22 @@ export default function SignIn() {
               }`}
             >
               Password
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode("otp");
+                setMessage(null);
+                setOtpPhase("request");
+                setOtp("");
+              }}
+              className={`flex-1 py-2 px-4 rounded-md font-medium transition-all duration-200 ${
+                authMode === "otp"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Email OTP
             </button>
           </div>
 
@@ -153,25 +284,28 @@ export default function SignIn() {
 
           {/* Sign In Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Input */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Email Address
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="you@example.com"
-                variant="soft"
-                className="font-medium"
-              />
-            </div>
+            {/* Email Input (always shown except during OTP verify phase) */}
+            {(authMode !== "otp" || otpPhase === "request") && (
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Email Address
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                  variant="soft"
+                  className="font-medium"
+                  disabled={loading}
+                />
+              </div>
+            )}
 
             {/* Password Input (only shown in password mode) */}
             {authMode === "password" && (
@@ -238,10 +372,68 @@ export default function SignIn() {
               </div>
             )}
 
+            {/* OTP Code Input */}
+            {authMode === "otp" && otpPhase === "verify" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  Enter 6-digit Code
+                </label>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={(val) => setOtp(val)}
+                    containerClassName="justify-center"
+                  >
+                    <InputOTPGroup>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <InputOTPSlot
+                          key={i}
+                          index={i}
+                          className="bg-white/80 backdrop-blur-sm border-gray-300 font-semibold text-lg"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                <p className="text-xs text-gray-500 mt-3 text-center">
+                  {otp.length < 6
+                    ? "Type the code from your email."
+                    : "Press Verify to continue."}
+                </p>
+                <div className="mt-4 flex items-center justify-center gap-3 text-xs text-gray-600">
+                  <button
+                    type="button"
+                    disabled={loading || resendSeconds > 0}
+                    onClick={(e) => handleOtpRequest(e as any)}
+                    className={`underline font-medium hover:text-gray-900 transition-colors disabled:opacity-40 ${
+                      resendSeconds <= 0 ? "" : "cursor-not-allowed"
+                    }`}
+                  >
+                    Resend Code{resendSeconds > 0 && ` (${resendSeconds})`}
+                  </button>
+                  <span aria-hidden className="text-gray-300 select-none">
+                    •
+                  </span>
+                  <button
+                    type="button"
+                    className="underline hover:text-gray-900"
+                    onClick={() => {
+                      setOtpPhase("request");
+                      setOtpUserId(null);
+                      setOtp("");
+                    }}
+                  >
+                    Change Email
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Description based on auth mode */}
             <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
               <p className="text-sm text-blue-800">
-                {authMode === "magic" ? (
+                {authMode === "magic" && (
                   <>
                     <span className="font-semibold">
                       🔐 Passwordless Sign In:
@@ -249,13 +441,30 @@ export default function SignIn() {
                     We'll send a magic link to your email. Click it to sign in
                     securely without a password.
                   </>
-                ) : (
+                )}
+                {authMode === "password" && (
                   <>
                     <span className="font-semibold">
                       ✉️ Email Verification Required:
                     </span>{" "}
                     Your email must be verified to access your account. We'll
                     send a verification link if needed.
+                  </>
+                )}
+                {authMode === "otp" && otpPhase === "request" && (
+                  <>
+                    <span className="font-semibold">
+                      🔢 Email One-Time Passcode:
+                    </span>{" "}
+                    Receive a 6-digit code in your inbox. Enter it here to sign
+                    in. No password needed.
+                  </>
+                )}
+                {authMode === "otp" && otpPhase === "verify" && (
+                  <>
+                    <span className="font-semibold">✅ Code Sent:</span> Enter
+                    the 6-digit code we emailed you. Codes expire quickly for
+                    security.
                   </>
                 )}
               </p>
@@ -296,8 +505,12 @@ export default function SignIn() {
                 </span>
               ) : authMode === "magic" ? (
                 "Send Magic Link"
-              ) : (
+              ) : authMode === "password" ? (
                 "Sign In"
+              ) : otpPhase === "request" ? (
+                "Send Code"
+              ) : (
+                "Verify Code"
               )}
             </button>
           </form>
