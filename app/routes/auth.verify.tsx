@@ -1,0 +1,138 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { account } from "~/lib/appwrite";
+
+export default function AuthVerify() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading"
+  );
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const verifyMagicURL = async () => {
+      const userId = searchParams.get("userId");
+      const secret = searchParams.get("secret");
+
+      if (!userId || !secret) {
+        setStatus("error");
+        setMessage("Invalid verification link. Missing parameters.");
+        return;
+      }
+
+      try {
+        // Complete the magic URL login
+        await account.updateMagicURLSession(userId, secret);
+        setStatus("success");
+        setMessage("Email verified successfully! Redirecting...");
+
+        // Redirect to home page after 2 seconds
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } catch (error: any) {
+        setStatus("error");
+        setMessage(
+          error.message || "Failed to verify email. The link may have expired."
+        );
+      }
+    };
+
+    verifyMagicURL();
+  }, [searchParams, navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
+      <div className="max-w-md w-full bg-white shadow-2xl rounded-2xl p-8 text-center border border-gray-100">
+        {status === "loading" && (
+          <>
+            <div className="mb-6">
+              <svg
+                className="animate-spin h-16 w-16 mx-auto text-blue-600"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Verifying your email
+            </h2>
+            <p className="text-gray-600">
+              Please wait while we verify your email address...
+            </p>
+          </>
+        )}
+
+        {status === "success" && (
+          <>
+            <div className="mb-6">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-10 h-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Success!</h2>
+            <p className="text-gray-600">{message}</p>
+          </>
+        )}
+
+        {status === "error" && (
+          <>
+            <div className="mb-6">
+              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-10 h-10 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Verification Failed
+            </h2>
+            <p className="text-gray-600 mb-6">{message}</p>
+            <button
+              onClick={() => navigate("/signin")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all"
+            >
+              Back to Sign In
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
