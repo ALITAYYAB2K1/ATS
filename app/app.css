@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@theme {
+/* Removed @theme (not recognized by current toolchain); expose font variable directly */
+:root {
   --font-sans:
     "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -79,6 +80,51 @@ body {
   }
 }
 
+/* Glassy navbar helper */
+.glass-nav {
+  background-image:
+    linear-gradient(
+      120deg,
+      hsl(var(--background) / 0.85),
+      hsl(var(--background) / 0.75) 40%,
+      hsl(var(--background) / 0.85)
+    ),
+    radial-gradient(at 15% 120%, rgba(99, 102, 241, 0.2), transparent 60%),
+    radial-gradient(at 85% -10%, rgba(168, 85, 247, 0.18), transparent 55%);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Autofill normalization */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: hsl(var(--foreground));
+  transition: background-color 9999s ease 0s;
+  caret-color: hsl(var(--foreground));
+}
+
+/* Reduce harsh inner shadow on iOS */
+input,
+textarea {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .glass-nav {
+    background-image:
+      linear-gradient(
+        120deg,
+        hsl(var(--background) / 0.7),
+        hsl(var(--background) / 0.55) 35%,
+        hsl(var(--background) / 0.7)
+      ),
+      radial-gradient(at 10% 110%, rgba(99, 102, 241, 0.25), transparent 60%),
+      radial-gradient(at 90% -10%, rgba(192, 132, 252, 0.25), transparent 55%);
+  }
+}
+
 /* Custom animations */
 @keyframes blob {
   0% {
@@ -118,4 +164,102 @@ body {
 
 .animate-shimmer {
   animation: shimmer 3s infinite;
+}
+
+/* Multi-hue slow gradient shift */
+@keyframes hue-shift {
+  0% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  50% {
+    filter: hue-rotate(40deg) brightness(1.05);
+  }
+  100% {
+    filter: hue-rotate(0deg) brightness(1);
+  }
+}
+
+.animated-glow-hues > .glow-layer {
+  animation: hue-shift 18s linear infinite;
+}
+
+/* Subtle float for layered glows */
+@keyframes float-slow {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.glow-float {
+  animation: float-slow 14s ease-in-out infinite;
+}
+
+/* Rotating conic gradient for central glow */
+@keyframes rotate-glow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.glow-rotator {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 1200px;
+  height: 1200px;
+  max-width: 140vw;
+  background: conic-gradient(
+    from 0deg,
+    rgba(59, 130, 246, 0.25),
+    rgba(168, 85, 247, 0.22),
+    rgba(236, 72, 153, 0.18),
+    rgba(59, 130, 246, 0.25)
+  );
+  animation: rotate-glow 55s linear infinite;
+  filter: blur(180px) saturate(160%);
+  opacity: 0.55;
+  pointer-events: none;
+  mask: radial-gradient(
+    circle at center,
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    transparent 70%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-rotator,
+  .glow-layer,
+  .glow-float {
+    animation: none !important;
+  }
+}
+
+/* Grain overlay utility */
+.grain-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04) _0_2px,
+      transparent_2px_4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) _0_2px,
+      transparent_2px_4px
+    );
+  mix-blend-mode: overlay;
+  opacity: 0.4;
 }

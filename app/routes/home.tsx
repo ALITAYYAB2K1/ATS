@@ -1,4 +1,6 @@
 import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { account } from "../lib/appwrite";
 import {
   Upload,
   CheckCircle,
@@ -30,6 +32,24 @@ export function meta() {
 }
 
 export default function Home() {
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const me = await account.get();
+        if (mounted) {
+          const isAnon = me?.labels?.includes("anonymous");
+          setAuthed(!!me && !isAnon);
+        }
+      } catch {
+        if (mounted) setAuthed(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   const features = [
     {
       icon: <CheckCircle className="h-8 w-8 text-green-500" />,
@@ -80,12 +100,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-20 overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-          <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+      <section className="relative bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-24 overflow-hidden">
+        {/* Enhanced layered glow backdrop */}
+        <div className="absolute inset-0 overflow-hidden -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.18),transparent_65%),radial-gradient(circle_at_80%_30%,rgba(168,85,247,0.18),transparent_70%),radial-gradient(circle_at_50%_80%,rgba(236,72,153,0.15),transparent_70%)]" />
+          <div className="absolute -top-56 -left-32 h-[40rem] w-[40rem] rounded-full bg-gradient-to-br from-blue-500/25 to-transparent blur-[160px]" />
+          <div className="absolute -bottom-72 -right-20 h-[46rem] w-[46rem] rounded-full bg-gradient-to-tr from-fuchsia-500/25 to-transparent blur-[170px]" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-indigo-500/25 via-purple-500/25 to-transparent blur-[170px]" />
+          <div className="absolute inset-0 mix-blend-overlay opacity-[0.35] bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.22)_0px,rgba(255,255,255,0.22)_2px,transparent_2px,transparent_6px)]" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -120,15 +142,17 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Link to="/signin">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full sm:w-auto text-lg px-8 py-6 border-2"
-                >
-                  Sign In
-                </Button>
-              </Link>
+              {!authed && (
+                <Link to="/signin">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto text-lg px-8 py-6 border-2"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {/* Stats */}
@@ -145,6 +169,132 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ATS Result Showcase Section */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.55] bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.10),transparent_65%),radial-gradient(circle_at_80%_70%,rgba(168,85,247,0.10),transparent_60%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+              Sample ATS Insights
+            </h2>
+            <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+              A quick preview of the kind of structured analysis you’ll receive.
+              Each card represents a processed resume with its overall
+              compatibility score and key highlights.
+            </p>
+          </div>
+          <div className="grid gap-8 md:grid-cols-3">
+            {dummyShowcase.map((item) => (
+              <div
+                key={item.id}
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-xl transition-all duration-300"
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-pink-600/5" />
+                <div className="relative p-5 flex-1 flex flex-col">
+                  <div className="aspect-[3/4] w-full overflow-hidden rounded-lg border bg-gray-50 shadow-inner mb-5">
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="h-full w-full object-cover object-top group-hover:scale-[1.03] transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2 text-gray-900 tracking-tight">
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-4 line-clamp-4">
+                    {item.summary}
+                  </p>
+                  <div className="mt-auto pt-2 flex items-center justify-between">
+                    <div className="relative flex items-center gap-3">
+                      <div className="relative">
+                        <svg
+                          viewBox="0 0 42 42"
+                          className="h-14 w-14 -rotate-90"
+                        >
+                          <circle
+                            cx="21"
+                            cy="21"
+                            r="18"
+                            stroke="#e5e7eb"
+                            strokeWidth="5"
+                            fill="none"
+                          />
+                          <circle
+                            cx="21"
+                            cy="21"
+                            r="18"
+                            stroke="url(#gradScore)"
+                            strokeWidth="5"
+                            fill="none"
+                            strokeDasharray={2 * Math.PI * 18}
+                            strokeDashoffset={
+                              (1 - item.score / 100) * (2 * Math.PI * 18)
+                            }
+                            strokeLinecap="round"
+                          />
+                          <defs>
+                            <linearGradient
+                              id="gradScore"
+                              x1="1"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop offset="0%" stopColor="#2563eb" />
+                              <stop offset="100%" stopColor="#9333ea" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-gray-800">
+                            {item.score}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs leading-relaxed text-gray-600 max-w-[110px]">
+                        <span className="font-medium text-gray-800">
+                          {item.score >= 80
+                            ? "Strong"
+                            : item.score >= 65
+                              ? "Moderate"
+                              : "Needs Work"}
+                        </span>
+                        <br />
+                        Overall Fit
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end text-right gap-1">
+                      {item.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-600/10 to-purple-600/10 text-[11px] font-medium text-gray-700 border border-gray-200"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="relative px-5 pb-5 pt-2">
+                  <div className="flex gap-2 flex-wrap text-[11px] text-gray-600">
+                    {item.highlights.map((h) => (
+                      <div
+                        key={h}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-50 border border-gray-200 shadow-sm hover:bg-white/70 transition text-xs"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
+                        {h}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -261,15 +411,17 @@ export default function Home() {
                 <Upload className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/signup">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto text-lg px-8 py-6 border-2 border-white text-white hover:bg-white/10"
-              >
-                Create Free Account
-              </Button>
-            </Link>
+            {!authed && (
+              <Link to="/signup">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto text-lg px-8 py-6 border-2 border-white text-white hover:bg-white/10"
+                >
+                  Create Free Account
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -292,3 +444,52 @@ export default function Home() {
     </div>
   );
 }
+
+// Showcase dummy data (local public images)
+const dummyShowcase = [
+  {
+    id: "r1",
+    title: "Product Manager Resume",
+    image: "/images/resume_01.png",
+    score: 82,
+    summary:
+      "Well-structured with quantified product metrics, stakeholder collaboration, and roadmap ownership. Could improve keyword density around experimentation.",
+    tags: ["Keywords", "Structure", "Metrics"],
+    highlights: [
+      "Strong action verbs",
+      "Clear impact metrics",
+      "ATS-friendly layout",
+      "Good section hierarchy",
+    ],
+  },
+  {
+    id: "r2",
+    title: "Full-Stack Engineer Resume",
+    image: "/images/resume_02.png",
+    score: 74,
+    summary:
+      "Solid technical stack coverage and accomplishments; missing some cloud optimization details and security considerations.",
+    tags: ["Tech", "Impact", "Readability"],
+    highlights: [
+      "Stack diversity",
+      "Quantified performance gains",
+      "Readable bullet density",
+      "Good seniority signals",
+    ],
+  },
+  {
+    id: "r3",
+    title: "Data Analyst Resume",
+    image: "/images/resume_03.png",
+    score: 88,
+    summary:
+      "Exceptional use of quantified insights, tooling variety, and outcome-driven storytelling. Minor opportunity to refine summary for focus.",
+    tags: ["Insights", "Clarity", "Optimization"],
+    highlights: [
+      "High metric coverage",
+      "Clear problem/solution framing",
+      "Tool diversity",
+      "Business impact focus",
+    ],
+  },
+];

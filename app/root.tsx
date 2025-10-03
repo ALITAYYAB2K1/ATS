@@ -9,7 +9,6 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import { ThemeProvider } from "./components/theme-provider";
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
 import { Toaster } from "./components/ui/sonner";
@@ -47,7 +46,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <>
       <div className="flex min-h-screen flex-col">
         <Navbar />
         <main className="flex-1">
@@ -56,7 +55,7 @@ export default function App() {
         <Footer />
       </div>
       <Toaster />
-    </ThemeProvider>
+    </>
   );
 }
 

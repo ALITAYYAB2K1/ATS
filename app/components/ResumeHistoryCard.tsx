@@ -1,4 +1,5 @@
 import { Link } from "react-router";
+import { Button } from "./ui/button";
 
 export default function ResumeHistoryCard({
   id,
@@ -7,6 +8,9 @@ export default function ResumeHistoryCard({
   imageUrl,
   overallScore,
   createdAt,
+  imageFileId,
+  onDelete,
+  deleting,
 }: {
   id: string;
   companyName?: string;
@@ -14,14 +18,34 @@ export default function ResumeHistoryCard({
   imageUrl?: string;
   overallScore?: number;
   createdAt?: string;
+  imageFileId?: string;
+  deleting?: boolean;
+  onDelete?: (id: string, imageFileId?: string) => void;
 }) {
   const score = Math.max(0, Math.min(100, overallScore ?? 0));
   const when = createdAt ? new Date(createdAt).toLocaleString() : "";
   return (
     <Link
       to={`/resume/${id}`}
-      className="group block overflow-hidden rounded-xl border border-gray-200 bg-white shadow hover:shadow-lg transition-shadow"
+      className="group relative block overflow-hidden rounded-xl border border-gray-200 bg-white shadow hover:shadow-lg transition-shadow"
     >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!deleting) onDelete?.(id, imageFileId);
+        }}
+        className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-md bg-white/90 backdrop-blur px-2 py-1 text-xs font-medium text-gray-600 border border-gray-200 shadow-sm hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition"
+        disabled={deleting}
+        aria-label="Delete resume"
+      >
+        {deleting ? (
+          <span className="animate-pulse">Deleting…</span>
+        ) : (
+          <>Delete</>
+        )}
+      </button>
       <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
         {imageUrl ? (
           <img

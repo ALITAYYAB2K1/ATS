@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { account } from "~/lib/appwrite";
 import { useNavigate } from "react-router";
+import { Input } from "../components/ui/input";
 
 export function meta() {
   return [
@@ -160,14 +161,15 @@ export default function SignIn() {
               >
                 Email Address
               </label>
-              <input
+              <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                variant="soft"
+                className="font-medium"
               />
             </div>
 
@@ -181,14 +183,15 @@ export default function SignIn() {
                   Password
                 </label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     placeholder="••••••••"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none pr-12"
+                    variant="soft"
+                    className="pr-12 font-medium tracking-wide"
                   />
                   <button
                     type="button"

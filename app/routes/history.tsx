@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { databases, ensureAppwriteSession } from "../lib/appwrite";
+import { databases, ensureAppwriteSession, storage } from "../lib/appwrite";
 import ResumeHistoryCard from "../components/ResumeHistoryCard";
 import { Button } from "../components/ui/button";
 import type { Feedback } from "../../types";
@@ -23,6 +23,7 @@ export default function History() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -126,6 +127,7 @@ export default function History() {
       : "";
     return {
       id: doc.$id,
+      imageFileId: doc.image_file_id,
       companyName: doc.company_name || "",
       jobTitle: doc.job_title || "",
       imageUrl,
@@ -133,6 +135,30 @@ export default function History() {
       createdAt: doc.$createdAt,
     };
   });
+
+  const handleDelete = async (id: string, imageFileId?: string) => {
+    if (deletingId) return; // prevent concurrent deletes
+    const confirmed = window.confirm(
+      "Delete this resume and its stored image? This cannot be undone."
+    );
+    if (!confirmed) return;
+    try {
+      setDeletingId(id);
+      await databases.deleteDocument(DB_ID, COLLECTION_ID, id);
+      if (imageFileId) {
+        try {
+          await storage.deleteFile(BUCKET_ID, imageFileId);
+        } catch (e) {
+          console.warn("Image delete failed", e);
+        }
+      }
+      setItems((prev) => prev.filter((d) => d.$id !== id));
+    } catch (e: any) {
+      alert(e.message || "Failed to delete resume");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -155,7 +181,12 @@ export default function History() {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((c) => (
-            <ResumeHistoryCard key={c.id} {...c} />
+            <ResumeHistoryCard
+              key={c.id}
+              {...(c as any)}
+              onDelete={handleDelete}
+              deleting={deletingId === c.id}
+            />
           ))}
         </div>
       </div>
