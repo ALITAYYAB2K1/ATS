@@ -5,6 +5,8 @@ export default [
   route("signin", "routes/SignIn.tsx"),
   route("signup", "routes/signup.tsx"),
   route("upload", "routes/upload.tsx"),
+  route("history", "routes/history.tsx"),
+  route("resume/:id", "routes/resume.$id.tsx"),
   route("auth/verify", "routes/auth.verify.tsx"),
   route("about", "routes/about.tsx"),
 ] satisfies RouteConfig;

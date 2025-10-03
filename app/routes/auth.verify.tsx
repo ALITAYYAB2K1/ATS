@@ -21,22 +21,46 @@ export default function AuthVerify() {
         return;
       }
 
-      try {
-        // Complete the magic URL login
-        await account.updateMagicURLSession(userId, secret);
-        setStatus("success");
-        setMessage("Email verified successfully! Redirecting...");
+      const runVerify = async (allowRetry = true) => {
+        try {
+          // Ensure no active session blocks creating a new session
+          try {
+            await account.get();
+            // If we reach here, a session exists (may be anonymous or user)
+            await account.deleteSession("current");
+          } catch {
+            // No active session, continue
+          }
 
-        // Redirect to home page after 2 seconds
-        setTimeout(() => {
-          navigate("/");
-        }, 2000);
-      } catch (error: any) {
-        setStatus("error");
-        setMessage(
-          error.message || "Failed to verify email. The link may have expired."
-        );
-      }
+          // Complete the magic URL login
+          await account.updateMagicURLSession(userId, secret);
+          setStatus("success");
+          setMessage("Email verified successfully! Redirecting...");
+
+          // Redirect to home page after 2 seconds
+          setTimeout(() => {
+            navigate("/");
+          }, 2000);
+        } catch (error: any) {
+          const msg = String(error?.message || error);
+          // If a session was active, clear and retry once
+          const sessionActiveErr =
+            msg.toLowerCase().includes("session is active") ||
+            msg.toLowerCase().includes("prohibited when a session is active");
+          if (allowRetry && sessionActiveErr) {
+            try {
+              await account.deleteSession("current");
+            } catch {}
+            return runVerify(false);
+          }
+          setStatus("error");
+          setMessage(
+            msg || "Failed to verify email. The link may have expired."
+          );
+        }
+      };
+
+      await runVerify(true);
     };
 
     verifyMagicURL();
