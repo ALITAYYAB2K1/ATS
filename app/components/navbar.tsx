@@ -129,7 +129,7 @@ export default function Navbar() {
               <Link to="/signup">
                 <Button
                   size="sm"
-                  className="h-10 px-5 text-[15px] font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-600 hover:to-purple-600/90 shadow-sm"
+                  className="text-white h-10 px-5 text-[15px] font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-600 hover:to-purple-600/90 shadow-sm"
                 >
                   Sign up
                 </Button>

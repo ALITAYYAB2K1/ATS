@@ -52,7 +52,7 @@ export default function About() {
               <Link to="/upload">
                 <Button
                   size="lg"
-                  className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:brightness-110 shadow-lg shadow-purple-600/20"
+                  className="text-white bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:brightness-110 shadow-lg shadow-purple-600/20"
                 >
                   Analyze My Resume
                 </Button>
@@ -142,7 +142,7 @@ export default function About() {
               <Link to="/upload">
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:brightness-110"
+                  className="bg-gradient-to-r text-white from-blue-600 via-purple-600 to-pink-600 hover:brightness-110"
                 >
                   Try It Now
                 </Button>
@@ -193,14 +193,14 @@ export default function About() {
       <section className="mx-auto max-w-5xl px-6 pb-24">
         <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-px shadow-lg">
           <div className="rounded-2xl bg-background/90 px-8 py-12 backdrop-blur">
-            <h2 className="text-2xl font-semibold text-center md:text-3xl">
+            <h2 className="text-2xl font-semibold text-center md:text-3xl text-white">
               Ready to Improve Your Resume?
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground text-white">
               Upload a resume and get a full diagnostic score with structured
               feedback in under a minute.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-white">
               <Link to="/upload">
                 <Button
                   size="lg"

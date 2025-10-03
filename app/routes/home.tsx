@@ -426,18 +426,70 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials or Trust Section */}
-      <section className="py-16 bg-white border-t">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-gray-500 mb-8">
+      {/* Trust / Brands Section */}
+      <section className="py-20 bg-white border-t relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.35] bg-[radial-gradient(circle_at_15%_30%,rgba(59,130,246,0.15),transparent_60%),radial-gradient(circle_at_85%_70%,rgba(168,85,247,0.15),transparent_65%)]" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm tracking-wide font-medium text-gray-500 mb-10 uppercase">
             Trusted by professionals at
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 opacity-50">
-            <div className="text-2xl font-bold text-gray-400">Google</div>
-            <div className="text-2xl font-bold text-gray-400">Microsoft</div>
-            <div className="text-2xl font-bold text-gray-400">Amazon</div>
-            <div className="text-2xl font-bold text-gray-400">Meta</div>
-            <div className="text-2xl font-bold text-gray-400">Apple</div>
+          <div className="flex flex-wrap justify-center items-center gap-10 md:gap-14">
+            {/* Google */}
+            <div className="flex items-center gap-2 select-none">
+              <span className="text-[2rem] leading-none font-black tracking-tight">
+                <span className="text-[#4285F4]">G</span>
+                <span className="text-[#DB4437]">o</span>
+                <span className="text-[#F4B400]">o</span>
+                <span className="text-[#4285F4]">g</span>
+                <span className="text-[#0F9D58]">l</span>
+                <span className="text-[#DB4437]">e</span>
+              </span>
+            </div>
+            {/* Microsoft */}
+            <div className="flex items-center gap-3 select-none">
+              <div className="grid grid-cols-2 gap-1.5">
+                <span className="h-3.5 w-3.5 rounded-sm bg-[#F25022]" />
+                <span className="h-3.5 w-3.5 rounded-sm bg-[#7FBA00]" />
+                <span className="h-3.5 w-3.5 rounded-sm bg-[#FFB900]" />
+                <span className="h-3.5 w-3.5 rounded-sm bg-[#00A4EF]" />
+              </div>
+              <span className="text-[1.55rem] font-semibold text-neutral-700 tracking-tight">
+                Microsoft
+              </span>
+            </div>
+            {/* Amazon */}
+            <div className="flex items-end gap-1 select-none">
+              <span className="text-[1.9rem] font-black tracking-tight text-neutral-800 relative">
+                amazon
+                <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[90%] h-[8px]">
+                  <svg
+                    viewBox="0 0 256 48"
+                    className="w-full h-full"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="#FF9900"
+                      d="M4 24c60 36 132 36 248 0-4 10-10 18-18 24-74 26-142 18-212-10-8-4-14-8-18-14z"
+                    />
+                  </svg>
+                </span>
+              </span>
+            </div>
+            {/* Meta */}
+            <div className="flex items-center gap-2 select-none">
+              <span className="text-[1.9rem] font-black tracking-tight bg-gradient-to-r from-[#0866FF] via-[#0A6CFF] to-[#6017FF] bg-clip-text text-transparent">
+                Meta
+              </span>
+            </div>
+            {/* Apple */}
+            <div className="flex items-center select-none">
+              <span className="text-[2rem] font-semibold text-neutral-900">
+                
+              </span>
+              <span className="text-[1.55rem] ml-1 font-medium tracking-tight text-neutral-700">
+                Apple
+              </span>
+            </div>
           </div>
         </div>
       </section>
