@@ -106,7 +106,7 @@ export default function History() {
             Analyze your first resume to see it here.
           </p>
           <Link to="/upload">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               Analyze a Resume
             </Button>
           </Link>
@@ -173,7 +173,7 @@ export default function History() {
             </p>
           </div>
           <Link to="/upload">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            <Button className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
               Analyze New
             </Button>
           </Link>

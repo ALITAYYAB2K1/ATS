@@ -66,7 +66,7 @@ export default function SignIn() {
     setMessage(null);
 
     try {
-      const redirectUrl = `${window.location.origin}/auth/verify`;
+      const redirectUrl = `${window.location.origin}/auth/verify?mode=magic`;
       await account.createMagicURLToken("unique()" as any, email, redirectUrl);
 
       setMessage({
@@ -91,21 +91,47 @@ export default function SignIn() {
     setMessage(null);
 
     try {
+      try {
+        const existing = await account.get();
+        if (existing) {
+          try {
+            await account.deleteSession("current");
+          } catch {}
+        }
+      } catch {}
+
       await account.createEmailPasswordSession(email, password);
 
       // Check if email is verified
       const user = await account.get();
       if (!user.emailVerification) {
         // Send verification email
-        await account.createVerification(
-          `${window.location.origin}/auth/verify`
-        );
+        try {
+          await account.createVerification(
+            `${window.location.origin}/auth/verify?mode=verify`
+          );
+        } catch (verificationError: any) {
+          console.warn("Verification email send failed", verificationError);
+        }
+
+        if (typeof window !== "undefined") {
+          try {
+            window.sessionStorage.setItem(
+              "pending-verified-login",
+              JSON.stringify({ email, password })
+            );
+          } catch {}
+        }
+
+        try {
+          await account.deleteSession("current");
+        } catch {}
+
+        await refreshUser();
         setMessage({
-          type: "success",
-          text: "Please verify your email. A verification link has been sent to your inbox.",
+          type: "error",
+          text: "Please verify your email before signing in. We just sent you a new verification link.",
         });
-        // Optionally log them out until verified
-        // await account.deleteSession('current');
       } else {
         setMessage({ type: "success", text: "Signed in successfully!" });
         await refreshUser();
@@ -115,10 +141,11 @@ export default function SignIn() {
         } catch {}
       }
     } catch (error: any) {
+      const errorMessage =
+        error.message || "Failed to sign in. Please check your credentials.";
       setMessage({
         type: "error",
-        text:
-          error.message || "Failed to sign in. Please check your credentials.",
+        text: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -168,8 +195,14 @@ export default function SignIn() {
       const anyAccount: any = account as any;
       // API variant 1: createSession(userId, secret)
       if (typeof anyAccount.createSession === "function") {
+        try {
+          await account.deleteSession("current");
+        } catch {}
         await anyAccount.createSession(otpUserId, otp);
       } else if (typeof anyAccount.updateEmailSession === "function") {
+        try {
+          await account.deleteSession("current");
+        } catch {}
         // Fallback older style
         await anyAccount.updateEmailSession(otpUserId, otp);
       } else {

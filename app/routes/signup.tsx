@@ -54,25 +54,40 @@ export default function SignUp() {
       // Create account
       await account.create(ID.unique(), email, password, name);
 
-      // Automatically log them in
+      // Create session temporarily to trigger verification email
       await account.createEmailPasswordSession(email, password);
 
-      // Send verification email (fire & forget)
-      account
-        .createVerification(`${window.location.origin}/auth/verify`)
-        .catch(() => {});
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(
+            "pending-verified-login",
+            JSON.stringify({ email, password })
+          );
+        } catch {}
+      }
+
+      try {
+        await account.createVerification(
+          `${window.location.origin}/auth/verify?mode=verify`
+        );
+      } catch {}
 
       setMessage({
         type: "success",
-        text: "Account created! Redirecting... (verification email sent)",
+        text: "Account created! Please verify your email from the link we just sent before signing in.",
       });
 
-      // Immediately refresh global auth context so navbar updates
+      try {
+        await account.deleteSession("current");
+      } catch {}
+
       await refreshUser();
-      navigate("/");
       try {
         (window as any).__authRefresh?.();
       } catch {}
+
+      setPassword("");
+      setConfirmPassword("");
     } catch (error: any) {
       setMessage({
         type: "error",

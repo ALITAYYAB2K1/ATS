@@ -29,9 +29,11 @@ export function meta() {
 
 export default function Upload() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, refreshing, refreshUser } = useAuth();
   const isAnon = user?.labels?.includes("anonymous");
   const isAuthed = !!user && !isAnon; // real authenticated (non-anonymous)
+  const isVerified = !!user?.emailVerification;
+  const canUseUpload = isAuthed && isVerified;
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusText, setStatusText] = useState(
@@ -39,6 +41,13 @@ export default function Upload() {
   );
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationBanner, setVerificationBanner] = useState<string | null>(
+    null
+  );
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null
+  );
 
   const handleFileSelect = (selectedFile: File | null) => {
     setFile(selectedFile);
@@ -58,6 +67,11 @@ export default function Upload() {
     try {
       if (!isAuthed) {
         throw new Error("Please sign in with an account to analyze resumes.");
+      }
+      if (!isVerified) {
+        throw new Error(
+          "Please verify your email address before analyzing resumes."
+        );
       }
       // Make sure we have an Appwrite session (anonymous if needed)
       const user = await ensureAppwriteSession();
@@ -160,6 +174,26 @@ export default function Upload() {
     handleAnalyze({ companyName, jobTitle, jobDescription, file });
   };
 
+  const handleResendVerification = async () => {
+    setVerificationError(null);
+    setVerificationBanner(null);
+    setResendingVerification(true);
+    try {
+      await account.createVerification(
+        `${window.location.origin}/auth/verify?mode=verify`
+      );
+      setVerificationBanner(
+        "A new verification link has been sent to your inbox."
+      );
+    } catch (error: any) {
+      setVerificationError(
+        error?.message || "Failed to send verification email."
+      );
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -189,39 +223,93 @@ export default function Upload() {
             className="relative bg-white shadow-2xl rounded-2xl p-8 space-y-6 border border-gray-100 overflow-hidden"
           >
             {/* Disabled glass overlay for unauthenticated users */}
-            {!loading && !isAuthed && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-sm bg-white/70 p-8 text-center animate-in fade-in">
-                <div className="max-w-md mx-auto">
-                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                    Sign in to Analyze Your Resume
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed mb-6">
-                    Create a free account to run AI-powered ATS analysis, store
-                    history, and track improvements over time.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Link to="/signin">
+            {!loading && !canUseUpload && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-sm bg-white/75 p-8 text-center animate-in fade-in space-y-6">
+                {!isAuthed ? (
+                  <div className="max-w-md mx-auto space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Sign in to Analyze Your Resume
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed">
+                        Create a free account to run AI-powered ATS analysis,
+                        store history, and track improvements over time.
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Link to="/signin">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="px-6 font-medium transition-all hover:-translate-y-[2px] hover:translate-x-[1px] hover:shadow-md"
+                        >
+                          Sign In
+                        </Button>
+                      </Link>
+                      <Link to="/signup">
+                        <Button
+                          type="button"
+                          className="text-white px-6 font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all hover:-translate-y-[2px] hover:translate-x-[1px] hover:shadow-[0_10px_24px_-6px_rgba(67,56,202,0.45)]"
+                        >
+                          Create Free Account
+                        </Button>
+                      </Link>
+                    </div>
+                    <p className="mt-6 text-xs text-gray-500">
+                      Anonymous browsing is allowed, but actions are disabled.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="max-w-lg mx-auto space-y-6">
+                    <div className="p-5 rounded-xl border border-green-200 bg-green-50 text-green-800 shadow-sm text-left">
+                      <p className="text-lg font-semibold">
+                        Verify your email to continue
+                      </p>
+                      <p className="text-sm text-green-700 mt-2">
+                        Please verify your email. A verification link has been
+                        sent to your inbox
+                        {user?.email ? ` (${user.email})` : ""}.
+                      </p>
+                      <p className="text-xs text-green-700 mt-3">
+                        Once you confirm your email, refresh this page or sign
+                        in again to unlock resume analysis.
+                      </p>
+                    </div>
+                    {verificationBanner && (
+                      <div className="p-4 rounded-lg border border-green-200 bg-green-100 text-green-800 text-sm">
+                        {verificationBanner}
+                      </div>
+                    )}
+                    {verificationError && (
+                      <div className="p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+                        {verificationError}
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendingVerification}
+                        className="px-6 font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      >
+                        {resendingVerification
+                          ? "Sending..."
+                          : "Resend verification email"}
+                      </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        className="px-6 font-medium transition-all hover:-translate-y-[2px] hover:translate-x-[1px] hover:shadow-md"
+                        disabled={refreshing}
+                        onClick={() => refreshUser()}
+                        className="px-6"
                       >
-                        Sign In
+                        {refreshing
+                          ? "Checking status..."
+                          : "I've verified – refresh"}
                       </Button>
-                    </Link>
-                    <Link to="/signup">
-                      <Button
-                        type="button"
-                        className="text-white px-6 font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all hover:-translate-y-[2px] hover:translate-x-[1px] hover:shadow-[0_10px_24px_-6px_rgba(67,56,202,0.45)]"
-                      >
-                        Create Free Account
-                      </Button>
-                    </Link>
+                    </div>
                   </div>
-                  <p className="mt-6 text-xs text-gray-500">
-                    Anonymous browsing is allowed, but actions are disabled.
-                  </p>
-                </div>
+                )}
               </div>
             )}
             <div className="space-y-2">
@@ -231,7 +319,7 @@ export default function Upload() {
                 name="company-name"
                 placeholder="e.g., Google, Microsoft"
                 className="text-base"
-                disabled={!isAuthed || loading}
+                disabled={!canUseUpload || loading}
               />
             </div>
 
@@ -245,7 +333,7 @@ export default function Upload() {
                 placeholder="e.g., Senior Frontend Developer"
                 required
                 className="text-base"
-                disabled={!isAuthed || loading}
+                disabled={!canUseUpload || loading}
               />
             </div>
 
@@ -259,7 +347,7 @@ export default function Upload() {
                 rows={5}
                 placeholder="Paste the job description here for more accurate analysis..."
                 className="text-base"
-                disabled={!isAuthed || loading}
+                disabled={!canUseUpload || loading}
               />
             </div>
 
@@ -272,12 +360,12 @@ export default function Upload() {
 
             <Button
               type="submit"
-              disabled={!file || isProcessing || !isAuthed || loading}
-              className="w-full text-lg py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              disabled={!file || isProcessing || !canUseUpload || loading}
+              className="text-white w-full text-lg py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               Analyze My Resume
             </Button>
-            {!isAuthed && !loading && (
+            {!loading && !canUseUpload && (
               <div className="absolute inset-0 pointer-events-none opacity-40 bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.05)_0_10px,rgba(255,255,255,0.15)_10px_20px)]" />
             )}
           </form>
