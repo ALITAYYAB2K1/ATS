@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { ID } from "appwrite";
 import {
   storage,
@@ -14,6 +14,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
+import { useAuth } from "../components/auth-context";
 
 const DB_ID = import.meta.env.VITE_APPWRITE_DB_ID!;
 const COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID!;
@@ -28,6 +29,9 @@ export function meta() {
 
 export default function Upload() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const isAnon = user?.labels?.includes("anonymous");
+  const isAuthed = !!user && !isAnon; // real authenticated (non-anonymous)
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusText, setStatusText] = useState(
@@ -52,6 +56,9 @@ export default function Upload() {
     file: File;
   }) => {
     try {
+      if (!isAuthed) {
+        throw new Error("Please sign in with an account to analyze resumes.");
+      }
       // Make sure we have an Appwrite session (anonymous if needed)
       const user = await ensureAppwriteSession();
       const userId = user?.$id ?? "anonymous";
@@ -179,8 +186,44 @@ export default function Upload() {
         {!isProcessing && (
           <form
             onSubmit={handleSubmit}
-            className="bg-white shadow-2xl rounded-2xl p-8 space-y-6 border border-gray-100"
+            className="relative bg-white shadow-2xl rounded-2xl p-8 space-y-6 border border-gray-100 overflow-hidden"
           >
+            {/* Disabled glass overlay for unauthenticated users */}
+            {!loading && !isAuthed && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center backdrop-blur-sm bg-white/70 p-8 text-center animate-in fade-in">
+                <div className="max-w-md mx-auto">
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                    Sign in to Analyze Your Resume
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed mb-6">
+                    Create a free account to run AI-powered ATS analysis, store
+                    history, and track improvements over time.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Link to="/signin">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-6 font-medium transition-all hover:-translate-y-[2px] hover:translate-x-[1px] hover:shadow-md"
+                      >
+                        Sign In
+                      </Button>
+                    </Link>
+                    <Link to="/signup">
+                      <Button
+                        type="button"
+                        className="text-white px-6 font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all hover:-translate-y-[2px] hover:translate-x-[1px] hover:shadow-[0_10px_24px_-6px_rgba(67,56,202,0.45)]"
+                      >
+                        Create Free Account
+                      </Button>
+                    </Link>
+                  </div>
+                  <p className="mt-6 text-xs text-gray-500">
+                    Anonymous browsing is allowed, but actions are disabled.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="company-name">Company Name (Optional)</Label>
               <Input
@@ -188,6 +231,7 @@ export default function Upload() {
                 name="company-name"
                 placeholder="e.g., Google, Microsoft"
                 className="text-base"
+                disabled={!isAuthed || loading}
               />
             </div>
 
@@ -201,6 +245,7 @@ export default function Upload() {
                 placeholder="e.g., Senior Frontend Developer"
                 required
                 className="text-base"
+                disabled={!isAuthed || loading}
               />
             </div>
 
@@ -214,6 +259,7 @@ export default function Upload() {
                 rows={5}
                 placeholder="Paste the job description here for more accurate analysis..."
                 className="text-base"
+                disabled={!isAuthed || loading}
               />
             </div>
 
@@ -226,11 +272,14 @@ export default function Upload() {
 
             <Button
               type="submit"
-              disabled={!file || isProcessing}
+              disabled={!file || isProcessing || !isAuthed || loading}
               className="w-full text-lg py-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               Analyze My Resume
             </Button>
+            {!isAuthed && !loading && (
+              <div className="absolute inset-0 pointer-events-none opacity-40 bg-[repeating-linear-gradient(45deg,rgba(0,0,0,0.05)_0_10px,rgba(255,255,255,0.15)_10px_20px)]" />
+            )}
           </form>
         )}
       </section>
