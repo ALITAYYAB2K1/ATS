@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
 import { account } from "../lib/appwrite";
 import { cn } from "../lib/utils";
 import { useAuth } from "./auth-context";
@@ -10,6 +11,11 @@ export default function Navbar() {
   const location = useLocation();
   const { user, loading, refreshUser } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     if (loggingOut) return;
@@ -37,27 +43,26 @@ export default function Navbar() {
       isActive: (p: string) => p.startsWith("/upload"),
     },
     {
-      to: "/history",
-      label: "History",
-      auth: true,
-      isActive: (p: string) => p.startsWith("/history"),
-    },
-    {
       to: "/about",
       label: "About",
       auth: false,
       isActive: (p: string) => p.startsWith("/about"),
     },
+    {
+      to: "/history",
+      label: "History",
+      auth: true,
+      isActive: (p: string) => p.startsWith("/history"),
+    },
   ];
 
   const pathname = location.pathname;
   const baseLink =
-    "relative px-5 py-2.5 text-[15px] font-medium rounded-full transition-colors duration-200 cursor-pointer";
+    "relative group flex items-center justify-center px-6 py-2.5 text-[16px] font-semibold rounded-full transition-all duration-200 cursor-pointer";
   // Subtle, low-vibrancy active style (less flashy)
   const activeClasses =
-    "bg-white/80 dark:bg-white/10 text-foreground shadow-sm ring-1 ring-black/10 dark:ring-white/15 backdrop-blur";
-  const inactiveClasses =
-    "text-foreground/60 hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10";
+    "bg-blue-600 text-white shadow-lg ring-1 ring-blue-600/40 backdrop-blur translate-x-[2px]";
+  const inactiveClasses = "hover:bg-blue-50";
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur bg-white/65 dark:bg-background/70 supports-[backdrop-filter]:bg-white/55 shadow-sm">
@@ -86,14 +91,23 @@ export default function Navbar() {
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 ring-offset-background"
                       )}
                     >
-                      {l.label}
+                      <span
+                        className={cn(
+                          "transition-all duration-200",
+                          active
+                            ? "text-white"
+                            : "bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 bg-clip-text text-transparent group-hover:brightness-110"
+                        )}
+                      >
+                        {l.label}
+                      </span>
                     </Link>
                   );
                 })}
             </nav>
           </div>
         </div>
-        <div className="flex items-center gap-3 min-w-[240px] justify-end">
+        <div className="flex items-center gap-3 min-w-[120px] justify-end">
           {loading && (
             <span className="text-xs text-muted-foreground animate-pulse">
               Loading...
@@ -140,7 +154,93 @@ export default function Navbar() {
             </>
           )}
         </div>
+        <button
+          type="button"
+          onClick={() => setMobileOpen((v) => !v)}
+          className="md:hidden inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/80 p-2 text-slate-600 shadow-sm transition hover:bg-white"
+          aria-label="Toggle navigation menu"
+        >
+          {mobileOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </button>
       </div>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <>
+          <div
+            className="md:hidden fixed inset-0 top-20 z-30 bg-black/20 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden
+          />
+          <div className="md:hidden fixed top-20 left-0 right-0 z-40 mx-4 rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <nav className="flex flex-col divide-y divide-slate-100">
+              {navLinks
+                .filter((l) => (l.auth ? isAuthed : true))
+                .map((l) => {
+                  const active = l.isActive(pathname);
+                  return (
+                    <Link
+                      key={`mobile-${l.to}`}
+                      to={l.to}
+                      className={cn(
+                        "px-6 py-4 text-lg font-semibold transition-all",
+                        active
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-slate-700 hover:bg-blue-50"
+                      )}
+                    >
+                      {l.label}
+                    </Link>
+                  );
+                })}
+            </nav>
+            <div className="p-4 flex flex-col gap-3">
+              {!loading && !isAuthed && (
+                <>
+                  <Link to="/signin" className="w-full">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Sign in
+                    </Button>
+                  </Link>
+                  <Link to="/signup" className="w-full">
+                    <Button
+                      className="w-full"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Sign up
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {!loading && isAuthed && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm text-slate-600 truncate">
+                    {user.name || user.email || "Account"}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileOpen(false);
+                    }}
+                    disabled={loggingOut}
+                  >
+                    {loggingOut ? "..." : "Logout"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 }

@@ -112,26 +112,16 @@ export default function ResumeDetails() {
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Resume Analysis Results
-            </h1>
-            {resumeData?.job_title && (
-              <p className="text-gray-600 mt-2 text-lg">
-                {resumeData.company_name && `${resumeData.company_name} - `}
-                {resumeData.job_title}
-              </p>
-            )}
-          </div>
-          <Button
-            onClick={() => navigate("/")}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <img src="/icons/back.svg" alt="back" className="w-4 h-4" />
-            Back to Home
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Resume Analysis Results
+          </h1>
+          {resumeData?.job_title && (
+            <p className="text-gray-600 mt-2 text-lg">
+              {resumeData.company_name && `${resumeData.company_name} - `}
+              {resumeData.job_title}
+            </p>
+          )}
         </div>
 
         {/* Main Content */}
@@ -164,7 +154,7 @@ export default function ResumeDetails() {
             <div className="flex gap-4">
               <Button
                 onClick={() => navigate("/upload")}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="text-white flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               >
                 Analyze Another Resume
               </Button>
